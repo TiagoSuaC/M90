@@ -95,7 +95,11 @@ export function calculateMetrics(
   // Current indication (most recent by startDate that is <= now)
   const validIndications = data.indications
     .filter((ind) => ind.startDate <= now)
-    .sort((a, b) => b.startDate.getTime() - a.startDate.getTime());
+    .sort((a, b) => {
+      const dateDiff = b.startDate.getTime() - a.startDate.getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
 
   const currentIndication = validIndications.length > 0
     ? {

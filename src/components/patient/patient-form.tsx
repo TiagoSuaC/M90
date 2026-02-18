@@ -69,6 +69,17 @@ export function PatientForm({ clinics, packages, patient }: PatientFormProps) {
               />
             </div>
 
+            {!isEditing && (
+              <div className="space-y-2">
+                <Label htmlFor="contractCode">Codigo do contrato</Label>
+                <Input
+                  id="contractCode"
+                  name="contractCode"
+                  required
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="clinicId">Unidade</Label>
               <Select name="clinicId" defaultValue={patient?.clinicId || ""}>

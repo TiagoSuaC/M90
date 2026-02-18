@@ -102,6 +102,7 @@ async function main() {
     create: {
       id: "patient-demo-1",
       fullName: "Carlos Silva",
+      contractCode: "CTR-2025-001",
       clinicId: clinic1.id,
       packageTemplateId: m90Package.id,
       startDate: new Date(Date.now() - 42 * 24 * 60 * 60 * 1000), // 6 weeks ago
@@ -236,6 +237,7 @@ async function main() {
     create: {
       id: "patient-demo-2",
       fullName: "Ana Paula Santos",
+      contractCode: "CTR-2025-002",
       clinicId: clinic2.id,
       packageTemplateId: m90Package.id,
       startDate: new Date(Date.now() - 70 * 24 * 60 * 60 * 1000), // 10 weeks ago
@@ -281,6 +283,7 @@ async function main() {
     create: {
       id: "patient-demo-3",
       fullName: "Roberto Oliveira",
+      contractCode: "CTR-2024-050",
       clinicId: clinic1.id,
       packageTemplateId: m90Package.id,
       startDate: new Date(Date.now() - 100 * 24 * 60 * 60 * 1000),

@@ -9,7 +9,7 @@ const patientInclude = {
     orderBy: { applicationDate: "desc" as const },
   },
   indications: {
-    orderBy: { startDate: "desc" as const },
+    orderBy: [{ startDate: "desc" as const }, { createdAt: "desc" as const }],
   },
   consultations: {
     orderBy: { consultationDate: "desc" as const },
@@ -84,10 +84,31 @@ export async function getPatientWithMetrics(
   return { ...patient, metrics };
 }
 
+export type SortField =
+  | "fullName"
+  | "clinic"
+  | "weeksElapsed"
+  | "mgRemaining"
+  | "nextApplicationDate"
+  | "status";
+
+export type SortOrder = "asc" | "desc";
+
+const dbSortFields: Record<string, any> = {
+  fullName: { fullName: "placeholder" },
+  clinic: { clinic: { name: "placeholder" } },
+  status: { status: "placeholder" },
+};
+
 export async function getPatientsWithMetrics(filters?: {
   clinicId?: string;
   status?: string;
   lowStock?: boolean;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sortBy?: SortField;
+  sortOrder?: SortOrder;
 }): Promise<PatientWithMetrics[]> {
   const where: any = {};
 
@@ -97,21 +118,75 @@ export async function getPatientsWithMetrics(filters?: {
   if (filters?.status) {
     where.status = filters.status;
   }
+  if (filters?.search) {
+    where.fullName = { contains: filters.search, mode: "insensitive" };
+  }
+  if (filters?.dateFrom || filters?.dateTo) {
+    where.startDate = {};
+    if (filters.dateFrom) {
+      where.startDate.gte = new Date(filters.dateFrom);
+    }
+    if (filters.dateTo) {
+      where.startDate.lte = new Date(filters.dateTo + "T23:59:59.999Z");
+    }
+  }
+
+  const sortBy = filters?.sortBy;
+  const sortOrder = filters?.sortOrder || "asc";
+
+  let orderBy: any = { createdAt: "desc" };
+  if (sortBy && dbSortFields[sortBy]) {
+    orderBy = JSON.parse(
+      JSON.stringify(dbSortFields[sortBy]).replace('"placeholder"', `"${sortOrder}"`)
+    );
+  }
 
   const patients = await prisma.patient.findMany({
     where,
     include: patientInclude,
-    orderBy: { createdAt: "desc" },
+    orderBy,
   });
 
-  const results = patients.map((patient) => {
+  let results = patients.map((patient) => {
     const data = buildPatientData(patient);
     const metrics = calculateMetrics(data);
     return { ...patient, metrics };
   });
 
   if (filters?.lowStock) {
-    return results.filter((p) => p.metrics.mgRemaining <= 20);
+    results = results.filter((p) => p.metrics.mgRemaining <= 20);
+  }
+
+  // Sort by computed fields (post-query)
+  if (sortBy && !dbSortFields[sortBy]) {
+    results.sort((a, b) => {
+      let valA: number | string | null;
+      let valB: number | string | null;
+
+      switch (sortBy) {
+        case "weeksElapsed":
+          valA = a.metrics.weeksElapsed;
+          valB = b.metrics.weeksElapsed;
+          break;
+        case "mgRemaining":
+          valA = a.metrics.mgRemaining;
+          valB = b.metrics.mgRemaining;
+          break;
+        case "nextApplicationDate":
+          valA = a.metrics.nextApplicationDate?.getTime() ?? null;
+          valB = b.metrics.nextApplicationDate?.getTime() ?? null;
+          break;
+        default:
+          return 0;
+      }
+
+      if (valA === null && valB === null) return 0;
+      if (valA === null) return 1;
+      if (valB === null) return -1;
+
+      const cmp = valA < valB ? -1 : valA > valB ? 1 : 0;
+      return sortOrder === "desc" ? -cmp : cmp;
+    });
   }
 
   return results;

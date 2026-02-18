@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { getPatientWithMetrics } from "@/lib/queries/patient-with-metrics";
 import { serialize } from "@/lib/serialize";
 import { SummaryCards } from "@/components/patient/summary-cards";
+import { WeightChart } from "@/components/patient/weight-chart";
 import { AlertBadges } from "@/components/patient/alert-badges";
 import { ApplicationsTab } from "@/components/patient/applications-tab";
 import { IndicationsTab } from "@/components/patient/indications-tab";
@@ -57,7 +58,8 @@ export default async function PatientDetailPage({
           </div>
           <p className="text-muted-foreground">
             {patient.clinic.name} &middot; Pacote{" "}
-            {patient.packageTemplate.name}
+            {patient.packageTemplate.name} &middot; Contrato{" "}
+            {patient.contractCode}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -77,6 +79,8 @@ export default async function PatientDetailPage({
       <AlertBadges alerts={patient.metrics.alerts} />
 
       <SummaryCards metrics={patient.metrics} />
+
+      <WeightChart measurements={measurements} />
 
       <Tabs defaultValue="applications" className="space-y-4">
         <TabsList className="flex-wrap">

@@ -8,6 +8,7 @@ import { z } from "zod";
 
 const createPatientSchema = z.object({
   fullName: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  contractCode: z.string().min(1, "Informe o codigo do contrato"),
   clinicId: z.string().min(1, "Selecione uma unidade"),
   packageTemplateId: z.string().min(1, "Selecione um pacote"),
   startDate: z.string().min(1, "Informe a data de inicio"),
@@ -28,11 +29,12 @@ export async function createPatient(formData: FormData) {
     return { error: parsed.error.errors[0].message };
   }
 
-  const { fullName, clinicId, packageTemplateId, startDate, notes, initialDoseMg, initialFrequencyDays } = parsed.data;
+  const { fullName, contractCode, clinicId, packageTemplateId, startDate, notes, initialDoseMg, initialFrequencyDays } = parsed.data;
 
   const patient = await prisma.patient.create({
     data: {
       fullName,
+      contractCode,
       clinicId,
       packageTemplateId,
       startDate: new Date(startDate),

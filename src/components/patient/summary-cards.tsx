@@ -1,5 +1,7 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import type { PatientMetrics } from "@/lib/patient-calculations";
 import { formatDate } from "@/lib/utils";
 import { Calendar, Pill, Stethoscope, TrendingUp } from "lucide-react";
@@ -9,6 +11,32 @@ interface SummaryCardsProps {
 }
 
 export function SummaryCards({ metrics }: SummaryCardsProps) {
+  const totalWeeks = metrics.weeksElapsed + metrics.weeksRemaining;
+  const weeksPercent = totalWeeks > 0 ? (metrics.weeksElapsed / totalWeeks) * 100 : 0;
+
+  const totalMg = metrics.mgAppliedTotal + metrics.mgRemaining - metrics.mgAdjusted;
+  const mgPercent = totalMg > 0 ? (metrics.mgRemaining / totalMg) * 100 : 0;
+
+  const mgBarColor =
+    metrics.mgRemaining <= 10
+      ? "[&>div]:bg-red-500"
+      : metrics.mgRemaining <= 20
+      ? "[&>div]:bg-yellow-500"
+      : "[&>div]:bg-green-500";
+
+  const endocrinoTotal = metrics.endocrinoCompleted + metrics.endocrinoRemaining;
+  const endocrinoPercent = endocrinoTotal > 0 ? (metrics.endocrinoCompleted / endocrinoTotal) * 100 : 0;
+
+  const nutriTotal = metrics.nutriCompleted + metrics.nutriRemaining;
+  const nutriPercent = nutriTotal > 0 ? (metrics.nutriCompleted / nutriTotal) * 100 : 0;
+
+  const daysColor =
+    metrics.estimatedDaysLeft <= 7
+      ? "text-red-600"
+      : metrics.estimatedDaysLeft <= 14
+      ? "text-yellow-600"
+      : "";
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <Card>
@@ -18,9 +46,10 @@ export function SummaryCards({ metrics }: SummaryCardsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {metrics.weeksElapsed}/{metrics.weeksElapsed + metrics.weeksRemaining}
+            {metrics.weeksElapsed}/{totalWeeks}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <Progress value={weeksPercent} className="h-2 mt-2" />
+          <p className="text-xs text-muted-foreground mt-2">
             {metrics.weeksRemaining > 0
               ? `${metrics.weeksRemaining} semana(s) restante(s)`
               : "Periodo encerrado"}
@@ -50,7 +79,8 @@ export function SummaryCards({ metrics }: SummaryCardsProps) {
               {metrics.mgRemaining.toFixed(1)}mg
             </span>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <Progress value={mgPercent} className={`h-2 mt-2 ${mgBarColor}`} />
+          <p className="text-xs text-muted-foreground mt-2">
             Aplicado: {metrics.mgAppliedTotal.toFixed(1)}mg
             {metrics.mgAdjusted !== 0 && (
               <> | Ajuste: {metrics.mgAdjusted > 0 ? "+" : ""}
@@ -72,20 +102,30 @@ export function SummaryCards({ metrics }: SummaryCardsProps) {
           <Stethoscope className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-sm">Endocrino:</span>
-              <Badge variant={metrics.endocrinoRemaining === 0 ? "success" : "secondary"}>
-                {metrics.endocrinoCompleted}/
-                {metrics.endocrinoCompleted + metrics.endocrinoRemaining}
-              </Badge>
+          <div className="space-y-3">
+            <div>
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span>Endocrino</span>
+                <span className="text-muted-foreground">
+                  {metrics.endocrinoCompleted}/{endocrinoTotal}
+                </span>
+              </div>
+              <Progress
+                value={endocrinoPercent}
+                className={`h-2 ${metrics.endocrinoRemaining === 0 ? "[&>div]:bg-green-500" : ""}`}
+              />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm">Nutri:</span>
-              <Badge variant={metrics.nutriRemaining === 0 ? "success" : "secondary"}>
-                {metrics.nutriCompleted}/
-                {metrics.nutriCompleted + metrics.nutriRemaining}
-              </Badge>
+            <div>
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span>Nutri</span>
+                <span className="text-muted-foreground">
+                  {metrics.nutriCompleted}/{nutriTotal}
+                </span>
+              </div>
+              <Progress
+                value={nutriPercent}
+                className={`h-2 ${metrics.nutriRemaining === 0 ? "[&>div]:bg-green-500" : ""}`}
+              />
             </div>
           </div>
         </CardContent>
@@ -102,7 +142,7 @@ export function SummaryCards({ metrics }: SummaryCardsProps) {
               <div className="text-2xl font-bold">
                 {metrics.estimatedApplicationsLeft} aplicacoes
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className={`text-xs mt-1 ${daysColor || "text-muted-foreground"}`}>
                 ~{metrics.estimatedDaysLeft} dias restantes
               </p>
               {metrics.nextApplicationDate && (
