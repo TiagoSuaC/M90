@@ -8,7 +8,7 @@ import { z } from "zod";
 
 const createPatientSchema = z.object({
   fullName: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  contractCode: z.string().min(1, "Informe o codigo do contrato"),
+  contractCode: z.string().optional().default(""),
   clinicId: z.string().min(1, "Selecione uma unidade"),
   packageTemplateId: z.string().min(1, "Selecione um pacote"),
   startDate: z.string().min(1, "Informe a data de inicio"),

@@ -75,7 +75,6 @@ export function PatientForm({ clinics, packages, patient }: PatientFormProps) {
                 <Input
                   id="contractCode"
                   name="contractCode"
-                  required
                 />
               </div>
             )}
