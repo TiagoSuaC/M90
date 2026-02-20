@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useActionState } from "react";
-import { createMeasurement } from "@/lib/actions/measurements";
+import { createMeasurement, updateMeasurement, deleteMeasurement } from "@/lib/actions/measurements";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,22 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -23,7 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus } from "lucide-react";
+import { Plus, Pencil, Trash2, MoreHorizontal } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 interface Measurement {
@@ -51,6 +67,11 @@ export function MeasurementsTab({
   measurements,
 }: MeasurementsTabProps) {
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingMeasurement, setEditingMeasurement] = useState<Measurement | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, startDeleteTransition] = useTransition();
+
   const [state, formAction, pending] = useActionState(
     async (_prev: any, formData: FormData) => {
       const result = await createMeasurement(formData);
@@ -59,6 +80,31 @@ export function MeasurementsTab({
     },
     null
   );
+
+  const [editState, editFormAction, editPending] = useActionState(
+    async (_prev: any, formData: FormData) => {
+      const result = await updateMeasurement(formData);
+      if (result?.success) {
+        setEditOpen(false);
+        setEditingMeasurement(null);
+      }
+      return result;
+    },
+    null
+  );
+
+  function handleEdit(m: Measurement) {
+    setEditingMeasurement(m);
+    setEditOpen(true);
+  }
+
+  function handleDelete() {
+    if (!deleteId) return;
+    startDeleteTransition(async () => {
+      await deleteMeasurement(deleteId, patientId);
+      setDeleteId(null);
+    });
+  }
 
   return (
     <div className="space-y-4">
@@ -152,6 +198,7 @@ export function MeasurementsTab({
               <TableHead>Gordura (%)</TableHead>
               <TableHead>Massa Magra (kg)</TableHead>
               <TableHead>Obs</TableHead>
+              <TableHead className="w-[50px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -172,12 +219,136 @@ export function MeasurementsTab({
                   <TableCell className="text-muted-foreground">
                     {m.notes || "-"}
                   </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(m)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={() => setDeleteId(m.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (!o) setEditingMeasurement(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Pesagem</DialogTitle>
+            <DialogDescription>Altere os dados da pesagem</DialogDescription>
+          </DialogHeader>
+          {editingMeasurement && (
+            <form action={editFormAction} className="space-y-4">
+              <input type="hidden" name="id" value={editingMeasurement.id} />
+              <input type="hidden" name="patientId" value={patientId} />
+              {editState?.error && (
+                <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+                  {editState.error}
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="edit-measurementDate">Data</Label>
+                <Input
+                  id="edit-measurementDate"
+                  name="measurementDate"
+                  type="date"
+                  defaultValue={editingMeasurement.measurementDate.split("T")[0]}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-weightKg">Peso (kg)</Label>
+                <Input
+                  id="edit-weightKg"
+                  name="weightKg"
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  defaultValue={Number(editingMeasurement.weightKg)}
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-fatPercentage">Gordura (%)</Label>
+                  <Input
+                    id="edit-fatPercentage"
+                    name="fatPercentage"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    defaultValue={editingMeasurement.fatPercentage !== null ? Number(editingMeasurement.fatPercentage) : ""}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-leanMassKg">Massa magra (kg)</Label>
+                  <Input
+                    id="edit-leanMassKg"
+                    name="leanMassKg"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    defaultValue={editingMeasurement.leanMassKg !== null ? Number(editingMeasurement.leanMassKg) : ""}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-notes">Observacoes</Label>
+                <Textarea
+                  id="edit-notes"
+                  name="notes"
+                  rows={2}
+                  defaultValue={editingMeasurement.notes || ""}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={editPending}>
+                {editPending ? "Salvando..." : "Salvar Alteracoes"}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => { if (!o) setDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir pesagem</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta pesagem? Esta acao nao pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

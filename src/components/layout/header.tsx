@@ -22,6 +22,7 @@ const roleLabels: Record<string, string> = {
 
 export async function Header() {
   const session = await auth();
+  const userRole = (session?.user as any)?.role;
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-white px-6">
@@ -40,6 +41,11 @@ export async function Header() {
             <DropdownMenuItem asChild>
               <Link href="/patients/new">Novo Paciente</Link>
             </DropdownMenuItem>
+            {userRole === "ADMIN" && (
+              <DropdownMenuItem asChild>
+                <Link href="/users">Usuarios</Link>
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
         <span className="text-lg font-bold text-primary">M90</span>

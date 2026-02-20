@@ -9,7 +9,7 @@ const patientInclude = {
     orderBy: { applicationDate: "desc" as const },
   },
   indications: {
-    orderBy: [{ startDate: "desc" as const }, { createdAt: "desc" as const }],
+    orderBy: [{ phaseOrder: "asc" as const }, { startDate: "asc" as const }],
   },
   consultations: {
     orderBy: { consultationDate: "desc" as const },
@@ -50,6 +50,7 @@ function buildPatientData(patient: any): PatientData {
     })),
     indications: patient.indications.map((i: any) => ({
       startDate: new Date(i.startDate),
+      durationWeeks: i.durationWeeks,
       doseMgPerApplication: toNumber(i.doseMgPerApplication),
       frequencyDays: i.frequencyDays,
       createdAt: new Date(i.createdAt),

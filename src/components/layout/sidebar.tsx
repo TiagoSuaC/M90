@@ -10,8 +10,20 @@ const navItems = [
   { href: "/patients/new", label: "Novo Paciente", icon: UserPlus },
 ];
 
-export function Sidebar() {
+const adminNavItems = [
+  { href: "/users", label: "Usuarios", icon: Users },
+];
+
+interface SidebarProps {
+  userRole?: string;
+}
+
+export function Sidebar({ userRole }: SidebarProps) {
   const pathname = usePathname();
+
+  const items = userRole === "ADMIN"
+    ? [...navItems, ...adminNavItems]
+    : navItems;
 
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 bg-white border-r">
@@ -20,7 +32,7 @@ export function Sidebar() {
         <span className="text-xl font-bold text-primary">M90</span>
       </div>
       <nav className="flex-1 px-4 py-4 space-y-1">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const isActive =
             pathname === item.href ||
             (item.href !== "/dashboard" && pathname.startsWith(item.href));

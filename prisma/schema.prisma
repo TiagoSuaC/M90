@@ -91,7 +91,9 @@ model MedicalIndication {
   id                   String   @id @default(cuid())
   patientId            String
   patient              Patient  @relation(fields: [patientId], references: [id])
+  phaseOrder           Int      @default(0)
   startDate            DateTime @db.Date
+  durationWeeks        Int?
   doseMgPerApplication Decimal  @db.Decimal(5, 2)
   frequencyDays        Int      @default(7)
   notes                String?
@@ -107,6 +109,11 @@ model Consultation {
   consultationDate DateTime         @db.Date
   professional     String
   notes            String?
+  dietNotes        String?
+  trainingNotes    String?
+  sleepNotes       String?
+  hydrationNotes   String?
+  otherNotes       String?
   countsInPackage  Boolean          @default(true)
   createdById      String
   createdAt        DateTime         @default(now())

@@ -12,6 +12,7 @@ export interface PatientData {
   applications: { applicationDate: Date; doseMg: number }[];
   indications: {
     startDate: Date;
+    durationWeeks: number | null;
     doseMgPerApplication: number;
     frequencyDays: number;
     createdAt: Date;
@@ -92,9 +93,14 @@ export function calculateMetrics(
     pkg.tirzepatidaTotalMg + mgAdjusted - mgAppliedTotal
   );
 
-  // Current indication (most recent by startDate that is <= now)
+  // Current indication (most recent by startDate that is <= now and not expired)
   const validIndications = data.indications
-    .filter((ind) => ind.startDate <= now)
+    .filter((ind) => {
+      if (ind.startDate > now) return false;
+      if (ind.durationWeeks === null || ind.durationWeeks === undefined) return true;
+      const endDate = addWeeks(ind.startDate, ind.durationWeeks);
+      return now < endDate;
+    })
     .sort((a, b) => {
       const dateDiff = b.startDate.getTime() - a.startDate.getTime();
       if (dateDiff !== 0) return dateDiff;
